@@ -73,7 +73,7 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
         gridspec_kw=grid,
         **kwargs,
     )
-    
+
     # hide spacer ax (3rd row)
     axes[2,0].set_visible(False)
     axes[2,1].set_visible(False)
@@ -115,7 +115,6 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
 def stationarity(
         x: pd.Series,
         *,
-        outliers: bool = False,
         adf: bool | float = 0.05,
         min_samples: int = 50,
         max_plots: int = 50,
@@ -125,7 +124,6 @@ def stationarity(
 
     Args:
         x (pd.Series): Input data.
-        outliers (bool, optional): Wether to keep outliers. Defaults to False.
         adf (bool | float, optional): Wether to run an augmented Dickey-Fuller test. If adf is a float this is used as a threshold for rejecting the null hypothesis. If set to False no adf test is performed which results in a significant speed-up. Defaults to 0.05.
         min_samples (int, optional): Minimum amount of samples required for each violin plot. Influences the number of violin plot that will be generated and takes precedence over `max_plots`. Defaults to 50.
         max_plots (int, optional): The maximum of violin plots generated. Defaults to 50.
@@ -141,9 +139,6 @@ def stationarity(
         raise ValueError(
             f"Adf should fall in ]0,1] if float, is '{adf}'."
         )
-
-    if not outliers:
-        x = _drop_outliers(x)
     
     # min simples takes precedence over max plots
     n = len(x) // max_plots
