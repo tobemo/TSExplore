@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from statsmodels.tsa.stattools import adfuller
 
-seaborn.set_theme()
+seaborn.set_theme(style='white')
 
 
 def _validate_x(x: pd.Series) -> None:
@@ -73,8 +73,16 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
         gridspec_kw=grid,
         **kwargs,
     )
+    
+    # hide spacer ax (3rd row)
     axes[2,0].set_visible(False)
     axes[2,1].set_visible(False)
+
+    # remove border between hist and boxplot
+    for i in [0,3]:
+        for j in [0,1]:
+            axes[0+i,j].spines['bottom'].set_visible(False)
+            axes[1+i,j].spines['top'].set_visible(False)
 
     # do share x between hist and boxplot
     if not share_axes:
