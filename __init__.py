@@ -55,19 +55,29 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
     x_diff = np.diff(x)
 
     # fig
-    grid = dict(height_ratios=[0.4, 0.1, 0.4, 0.1], hspace=0.5)
-    sharex = _have_same_magnitude(x, x_log, x_sqr, x_diff)
+    share_axes = _have_same_magnitude(x, x_log, x_sqr, x_diff)
+    height_ratios = [0.36, 0.1, 0.08, 0.36, 0.1] 
+    wspace = 0.05
+    if not share_axes: 
+        height_ratios = [0.33, 0.1, 0.14, 0.33, 0.1]
+        wspace = 0.3
+    grid = dict(
+        height_ratios=height_ratios,
+        hspace=0, wspace=wspace,
+    )
     fig, axes = plt.subplots(
-        nrows=2*2,
+        nrows=2*2 + 1,
         ncols=2,
-        sharex=sharex,
-        sharey='row',
+        sharex=share_axes,
+        sharey='row' if share_axes else False,
         gridspec_kw=grid,
         **kwargs,
     )
+    axes[2,0].set_visible(False)
+    axes[2,1].set_visible(False)
 
     # do share x between hist and boxplot
-    if not sharex:
+    if not share_axes:
         for a, b in zip(axes[0::2,:].flatten(), axes[1::2,:].flatten()):
             a.sharex(b)
             a.get_xaxis().set_visible(False)
@@ -75,22 +85,22 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
     # density plots
     seaborn.kdeplot(x, ax=axes[0,0])
     seaborn.kdeplot(x_log, ax=axes[0,1])
-    seaborn.kdeplot(x_sqr, ax=axes[2,0])
-    seaborn.kdeplot(x_diff, ax=axes[2,1])
-    for ax, title in zip(axes[0::2, :].flatten(), ["x", "log(x)", "x^2", "x'"]):
+    seaborn.kdeplot(x_sqr, ax=axes[3,0])
+    seaborn.kdeplot(x_diff, ax=axes[3,1])
+    for ax, title in zip(axes[0::3, :].flatten(), ["x", "log(x)", "x^2", "x'"]):
         ax.set_title(title)
     
     # boxplots
     seaborn.boxplot(x, orient='h', ax=axes[1,0])
     seaborn.boxplot(x_log, orient='h', ax=axes[1,1])
-    seaborn.boxplot(x_sqr, orient='h', ax=axes[3,0])
-    seaborn.boxplot(x_diff, orient='h', ax=axes[3,1])
+    seaborn.boxplot(x_sqr, orient='h', ax=axes[4,0])
+    seaborn.boxplot(x_diff, orient='h', ax=axes[4,1])
 
     fig.suptitle(
         "Distributions of common transformations"
         f" {'with' if outliers else 'without'} outliers."
     )
-    # fig.tight_layout()
+    fig.tight_layout()
     return axes
 
 
