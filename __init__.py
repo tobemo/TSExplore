@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import seaborn
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 from scipy import stats
 from statsmodels.tsa.stattools import adfuller
@@ -109,7 +110,7 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
         f" {'with' if outliers else 'without'} outliers."
     )
     fig.tight_layout()
-    return axes
+    return fig
 
 
 def stationarity(
@@ -184,5 +185,48 @@ def stationarity(
     
     fig.suptitle(title)
     fig.tight_layout()
-    return axes
+    return fig
+
+
+def report(
+        x: pd.Series,
+        *,
+        outliers: bool = False,
+        simple: bool = True,
+        adf: bool | float = 0.05,
+        min_samples: int = 50,
+        max_plots: int = 50,
+    ) -> plt.Axes:
+    # https://stackoverflow.com/a/70093661
+    backend = mpl.get_backend()
+    mpl.use('agg')
+    dpi = 100
+
+    fig1 = distribution(x=x, outliers=outliers, figsize=(1000/dpi, 1000/dpi))
+    if simple:
+        adf = False
+    fig2 = stationarity(
+        x=x,
+        adf=adf,
+        min_samples=min_samples,
+        max_plots=max_plots,
+        figsize=(1000/dpi, 1000/dpi)
+    )
+
+    c1 = fig1.canvas
+    c2 = fig2.canvas
+
+    c1.draw()
+    c2.draw()
+
+    a1 = np.array(c1.buffer_rgba())
+    a2 = np.array(c2.buffer_rgba())
+    a = np.hstack((a1,a2))
+
+    mpl.use(backend)
+    fig,ax = plt.subplots(figsize=(2000/dpi, 1000/dpi), dpi=dpi)
+    fig.subplots_adjust(0, 0, 1, 1)
+    ax.set_axis_off()
+    ax.matshow(a)
+    return fig
 
