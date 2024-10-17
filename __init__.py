@@ -26,6 +26,13 @@ def _drop_outliers(x: pd.Series) -> pd.Series:
     return x.loc[inliers]
 
 
+def _have_same_magnitude(*x) -> bool:
+    """Returns wether all values passed have the same order of magnitude."""
+    magnitude = lambda s: len(str(int(np.median(s[~np.isnan(s)]))))
+    magnitudes = [magnitude(_x) for _x in x]
+    return len(set(magnitudes)) == 1
+
+
 def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
     """Plots distribution of `x`, `log(x)`, `x^2` and `x'`.
 
@@ -38,22 +45,34 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
     """
     _validate_x(x)
 
+    # drop outliers
     if not outliers:
         x = _drop_outliers(x)
     
+    # x transforms
     x_log = np.log(x)
     x_sqr = np.square(x)
     x_diff = np.diff(x)
 
-    grid = dict(height_ratios=[0.4, 0.1, 0.4, 0.1])
+    # fig
+    grid = dict(height_ratios=[0.4, 0.1, 0.4, 0.1], hspace=0.5)
+    sharex = _have_same_magnitude(x, x_log, x_sqr, x_diff)
     fig, axes = plt.subplots(
         nrows=2*2,
         ncols=2,
-        sharex=True,
+        sharex=sharex,
         sharey='row',
         gridspec_kw=grid,
         **kwargs,
     )
+
+    # do share x between hist and boxplot
+    if not sharex:
+        for a, b in zip(axes[0::2,:].flatten(), axes[1::2,:].flatten()):
+            a.sharex(b)
+            a.get_xaxis().set_visible(False)
+    
+    # density plots
     seaborn.kdeplot(x, ax=axes[0,0])
     seaborn.kdeplot(x_log, ax=axes[0,1])
     seaborn.kdeplot(x_sqr, ax=axes[2,0])
@@ -61,6 +80,7 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
     for ax, title in zip(axes[0::2, :].flatten(), ["x", "log(x)", "x^2", "x'"]):
         ax.set_title(title)
     
+    # boxplots
     seaborn.boxplot(x, orient='h', ax=axes[1,0])
     seaborn.boxplot(x_log, orient='h', ax=axes[1,1])
     seaborn.boxplot(x_sqr, orient='h', ax=axes[3,0])
@@ -70,7 +90,7 @@ def distribution(x: pd.Series, *, outliers: bool = False, **kwargs) -> plt.Axes:
         "Distributions of common transformations"
         f" {'with' if outliers else 'without'} outliers."
     )
-    fig.tight_layout()
+    # fig.tight_layout()
     return axes
 
 
